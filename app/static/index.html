@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InkMirror</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/fabric.min.js"></script>
+</head>
+
+<body>
+    <!-- 画布 -->
+    <canvas id="canvas"></canvas>
+    <!-- 工具栏 -->
+    <!-- 主工具栏 -->
+    <div class="toolbar-container">
+        <div class="toolbar">
+            <div class="toolbar-item penMode penMode-selector" onclick="setPenMode('selector');">
+                <img src="/static/icons/cursor.svg">
+            </div>
+            <div class="toolbar-item penMode penMode-pen" onclick="setPenMode('pen');">
+                <img src="/static/icons/edit.svg">
+            </div>
+            <div class="toolbar-item penMode penMode-eraser" onclick="setPenMode('eraser');">
+                <img src="/static/icons/eraser.svg">
+            </div>
+            <div class="toolbar-item btn-shape">
+                <img src="/static/icons/shape.svg">
+            </div>
+            <div class="toolbar-item toolbar-item-disabled btn-style">
+                <img src="/static/icons/format_paint.svg">
+            </div>
+            <div class="toolbar-item btn-undo" onclick="undo();">
+                <img src="/static/icons/undo.svg">
+            </div>
+            <div class="toolbar-item btn-redo" onclick="redo();">
+                <img src="/static/icons/redo.svg">
+            </div>
+            <div class="toolbar-item btn-more">
+                <img src="/static/icons/more_horiz.svg">
+            </div>
+        </div>
+    </div>
+    <!-- 右侧工具栏（翻页器） -->
+    <div class="toolbar-container" style="justify-content: right;">
+        <div class="toolbar" style="margin-right: 8px;">
+            <div class="toolbar-item btn-prevPage" onclick="prevPage();">
+                <img src="/static/icons/keyboard_arrow_left.svg">
+            </div>
+            <div class="toolbar-item pageNum" style="color: #fff;font-size: 14px;width: 64px;">1 / 1</div>
+            <div class="toolbar-item btn-nextPage" onclick="nextPage();">
+                <img class="icon-nextPage" src="/static/icons/add.svg">
+            </div>
+        </div>
+    </div>
+    <!-- 左侧工具栏 -->
+    <div class="toolbar-container" style="justify-content: left;">
+        <div class="toolbar" style="margin-left: 8px;">
+            <div class="toolbar-item" onclick="toggleDialog('.dialog-about');closeAllDialogs('.dialog-about');">
+                <img src="/static/icons/info.svg">
+            </div>
+            <div class="toolbar-item" onclick="saveAsPNG();">
+                <img src="/static/icons/save.svg">
+            </div>
+            <div class="toolbar-item" onclick="toggleFullscreen();">
+                <img src="/static/icons/fullscreen.svg" class="icon-fullscreen">
+            </div>
+        </div>
+    </div>
+    <!-- 对话框 -->
+    <!-- 对话框 - 全部擦除 -->
+    <div class="dialog dialog-clearAll">
+        <div class="btn btn-secondary" onclick="clearAll()" style="padding: 8px 16px;">
+            <img src="/static/icons/delete_sweep.svg" class="icon-inline">
+            <span style="display: inline-block;vertical-align: middle;">全部擦除</span>
+        </div>
+    </div>
+    <!-- 对话框 - 画笔参数 -->
+    <div class="dialog dialog-penOptions" style="padding: 16px;white-space: nowrap;">
+        <!-- 设置 white-space 是为了防止拖拽时自动换行 -->
+        <!-- 标题（可拖拽部分） -->
+        <div class="dialog-title">画笔参数</div>
+        <div class="dialog-btn-icon" onclick="fixDialog('.dialog-penOptions');">
+            <img src="/static/icons/arrow_outward.svg">
+        </div>
+        <div class="dialog-dragger"></div>
+        <hr>
+        <!-- 左侧部分 -->
+        <div style="display: inline-block;vertical-align: top;;">
+            <!-- 颜色区域 -->
+            <div>
+                <img src="/static/icons/color_lens.svg" class="icon-inline" style="opacity: 0.5;">
+                <span style="display: inline-block;vertical-align: middle;font-size: 14px;opacity: 0.5;">颜色</span>
+                <div class="penPreview"></div>
+            </div>
+            <div class="palette palette-pen"></div>
+            <input type="color" class="input-customColor" value="#ffffff">
+            <!-- 透明度区域 -->
+            <div style="margin-top: 12px;">
+                <img src="/static/icons/opacity.svg" class="icon-inline" style="opacity: 0.5;">
+                <input type="range" min="0" max="1" step="0.01" value="1" class="input-range input-penOpacity"
+                    style="width: calc(100% - 36px);display: inline-block;vertical-align: middle;">
+            </div>
+            <!-- 大小区域 -->
+            <div style="margin-top: 12px;">
+                <img src="/static/icons/radio_button_checked.svg" class="icon-inline" style="opacity: 0.5;">
+                <input type="range" min="1" max="20" step="0.1" value="2" class="input-range input-penSize"
+                    style="width: calc(100% - 36px);display: inline-block;vertical-align: middle;">
+            </div>
+        </div>
+        <!-- 右侧部分 -->
+        <div style="display: inline-block;vertical-align: top;margin-left: 16px;">
+            <!-- 预设区域 -->
+            <div style="margin-bottom: 8px;">
+                <img src="/static/icons/edit.svg" class="icon-inline" style="opacity: 0.5;">
+                <span style="display: inline-block;vertical-align: middle;font-size: 14px;opacity: 0.5;">预设</span>
+            </div>
+            <div class="btn btn-secondary" onclick="setPenPreset('default');">普通笔</div>
+            <div class="btn btn-secondary" onclick="setPenPreset('highlighter');" style="margin-top: 8px;">荧光笔</div>
+            <div class="btn btn-secondary" onclick="setPenPreset('dash');" style="margin-top: 8px;">虚线笔</div>
+            <div class="btn btn-secondary" onclick="setPenPreset('shadow');" style="margin-top: 8px;">阴影笔</div>
+        </div>
+    </div>
+    <!-- 对话框 - 形状 -->
+    <div class="dialog dialog-shape" style="padding: 16px;">
+        <div class="dialog-title">形状</div>
+        <div class="dialog-btn-icon" onclick="fixDialog('.dialog-shape');">
+            <img src="/static/icons/arrow_outward.svg">
+        </div>
+        <div class="dialog-dragger"></div>
+        <hr>
+        <div class="grid">
+            <div class="grid-item" onclick="drawShape('line');">
+                <img src="/static/icons/shape-line.svg">
+            </div>
+            <div class="grid-item" onclick="drawShape('arrow');">
+                <img src="/static/icons/shape-arrow.svg">
+            </div>
+            <div class="grid-item" onclick="drawShape('arrow', {double: true});">
+                <img src="/static/icons/shape-arrow_double.svg">
+            </div>
+            <div class="grid-item" onclick="drawShape('rect');">
+                <img src="/static/icons/shape-rect.svg">
+            </div>
+            <div class="grid-item" onclick="drawShape('circle');">
+                <img src="/static/icons/shape-circle.svg">
+            </div>
+            <div class="grid-item" onclick="drawShape('triangle');">
+                <img src="/static/icons/shape-triangle.svg">
+            </div>
+            <div class="grid-item" onclick="drawShape('rightTriangle');">
+                <img src="/static/icons/shape-rightTriangle.svg">
+            </div>
+            <div class="grid-item" onclick="drawShape('rhombus');">
+                <img src="/static/icons/shape-rhombus.svg">
+            </div>
+            <div class="grid-item" onclick="drawShape('pentagon');">
+                <img src="/static/icons/shape-pentagon.svg">
+            </div>
+            <div class="grid-item" onclick="drawShape('hexagon');">
+                <img src="/static/icons/shape-hexagon.svg">
+            </div>
+            <div class="grid-item" onclick="drawShape('octagon');">
+                <img src="/static/icons/shape-octagon.svg">
+            </div>
+            <div class="grid-item" onclick="drawShape('star');">
+                <img src="/static/icons/shape-star.svg">
+            </div>
+        </div>
+    </div>
+    <!-- 对话框 - 样式 -->
+    <div class="dialog dialog-style" style="padding: 16px;">
+        <div class="dialog-title">样式</div>
+        <div class="dialog-btn-icon" onclick="fixDialog('.dialog-style');">
+            <img src="/static/icons/arrow_outward.svg">
+        </div>
+        <div class="dialog-dragger"></div>
+        <div class="dialog-overlay"></div>
+        <hr>
+        <!-- 描边区域 -->
+        <div style="margin-bottom: 8px;">
+            <img src="/static/icons/border_style.svg" class="icon-inline" style="opacity: 0.5;">
+            <span style="display: inline-block;vertical-align: middle;font-size: 14px;opacity: 0.5;">描边</span>
+        </div>
+        <div class="palette palette-border" style="grid-template-columns: auto auto auto auto auto auto auto auto;">
+            <div class="palette-item" style="background-color: #EF5350;" onclick="setStyle({stroke: '#EF5350'});">
+            </div>
+            <div class="palette-item" style="background-color: #AB47BC;" onclick="setStyle({stroke: '#AB47BC'});">
+            </div>
+            <div class="palette-item" style="background-color: #5C6BC0;" onclick="setStyle({stroke: '#5C6BC0'});">
+            </div>
+            <div class="palette-item" style="background-color: #42A5F5;" onclick="setStyle({stroke: '#42A5F5'});">
+            </div>
+            <div class="palette-item" style="background-color: #26C6DA;" onclick="setStyle({stroke: '#26C6DA'});">
+            </div>
+            <div class="palette-item" style="background-color: #66BB6A;" onclick="setStyle({stroke: '#66BB6A'});">
+            </div>
+            <div class="palette-item" style="background-color: #FFEE58;" onclick="setStyle({stroke: '#FFEE58'});">
+            </div>
+            <div class="palette-item palette-item-customColor" onclick="setStyle({stroke: 'rgba(0, 0, 0, 0)'});">
+                <img src="/static/icons/not_interested.svg" style="filter: invert(1);">
+            </div>
+        </div>
+        <div class="btn btn-secondary"
+            onclick="setStyle({stroke: canvas.freeDrawingBrush.color, strokeWidth: canvas.freeDrawingBrush.width, strokeDashArray: canvas.freeDrawingBrush.strokeDashArray});">
+            使用当前画笔样式</div>
+        <!-- 填充区域 -->
+        <div style="margin: 8px 0;">
+            <img src="/static/icons/format_color_fill.svg" class="icon-inline" style="opacity: 0.5;">
+            <span style="display: inline-block;vertical-align: middle;font-size: 14px;opacity: 0.5;">填充</span>
+        </div>
+        <div class="palette palette-fill" style="grid-template-columns: auto auto auto auto auto auto auto auto;">
+            <div class="palette-item" style="background-color: #EF5350;" onclick="setStyle({fill: '#EF5350'});"></div>
+            <div class="palette-item" style="background-color: #AB47BC;" onclick="setStyle({fill: '#AB47BC'});"></div>
+            <div class="palette-item" style="background-color: #5C6BC0;" onclick="setStyle({fill: '#5C6BC0'});"></div>
+            <div class="palette-item" style="background-color: #42A5F5;" onclick="setStyle({fill: '#42A5F5'});"></div>
+            <div class="palette-item" style="background-color: #26C6DA;" onclick="setStyle({fill: '#26C6DA'});"></div>
+            <div class="palette-item" style="background-color: #66BB6A;" onclick="setStyle({fill: '#66BB6A'});"></div>
+            <div class="palette-item" style="background-color: #FFEE58;" onclick="setStyle({fill: '#FFEE58'});"></div>
+            <div class="palette-item palette-item-customColor" onclick="setStyle({fill: 'rgba(0, 0, 0, 0)'});">
+                <img src="/static/icons/not_interested.svg" style="filter: invert(1);">
+            </div>
+        </div>
+        <div class="btn btn-secondary" onclick="setStyle({fill: canvas.freeDrawingBrush.color});">使用当前画笔颜色</div>
+        <!-- 阴影区域 -->
+        <div style="margin: 8px 0;">
+            <img src="/static/icons/square.svg" class="icon-inline" style="opacity: 0.5;">
+            <span style="display: inline-block;vertical-align: middle;font-size: 14px;opacity: 0.5;">阴影</span>
+        </div>
+        <div class="palette palette-fill" style="grid-template-columns: auto auto auto auto auto auto auto auto;">
+            <div class="palette-item" style="background-color: #EF5350;" onclick="setStyle({shadow: '#EF5350'});"></div>
+            <div class="palette-item" style="background-color: #AB47BC;" onclick="setStyle({shadow: '#AB47BC'});"></div>
+            <div class="palette-item" style="background-color: #5C6BC0;" onclick="setStyle({shadow: '#5C6BC0'});"></div>
+            <div class="palette-item" style="background-color: #42A5F5;" onclick="setStyle({shadow: '#42A5F5'});"></div>
+            <div class="palette-item" style="background-color: #26C6DA;" onclick="setStyle({shadow: '#26C6DA'});"></div>
+            <div class="palette-item" style="background-color: #66BB6A;" onclick="setStyle({shadow: '#66BB6A'});"></div>
+            <div class="palette-item" style="background-color: #FFEE58;" onclick="setStyle({shadow: '#FFEE58'});"></div>
+            <div class="palette-item palette-item-customColor" onclick="setStyle({shadow: null});">
+                <img src="/static/icons/not_interested.svg" style="filter: invert(1);">
+            </div>
+        </div>
+        <div class="btn btn-secondary" onclick="setStyle({shadow: canvas.freeDrawingBrush.color});">使用当前画笔颜色</div>
+    </div>
+    <!-- 对话框 - 更多 -->
+    <div class="dialog dialog-more" style="padding: 16px;">
+        <div class="dialog-title">更多</div>
+        <div class="dialog-btn-icon" onclick="fixDialog('.dialog-more');">
+            <img src="/static/icons/arrow_outward.svg">
+        </div>
+        <div class="dialog-dragger"></div>
+        <hr>
+        <div class="grid grid-with-text" style="grid-template-columns: auto auto auto auto;">
+            <div class="grid-item grid-item-disabled btn-layerAction" onclick="changeLayer('up');">
+                <img src="/static/icons/arrow_upward.svg">
+                <div class="grid-item-text">升层</div>
+            </div>
+            <div class="grid-item grid-item-disabled btn-layerAction" onclick="changeLayer('down');">
+                <img src="/static/icons/arrow_downward.svg">
+                <div class="grid-item-text">降层</div>
+            </div>
+            <div class="grid-item grid-item-disabled btn-layerAction" onclick="changeLayer('top');">
+                <img src="/static/icons/arrow_circle_up.svg">
+                <div class="grid-item-text">置顶</div>
+            </div>
+            <div class="grid-item grid-item-disabled btn-layerAction" onclick="changeLayer('bottom');">
+                <img src="/static/icons/arrow_circle_down.svg">
+                <div class="grid-item-text">置底</div>
+            </div>
+            <div class="grid-item grid-item-disabled btn-copy" onclick="copyObj();">
+                <img src="/static/icons/content_copy.svg">
+                <div class="grid-item-text">复制</div>
+            </div>
+            <div class="grid-item grid-item-disabled btn-paste" onclick="pasteObj();">
+                <img src="/static/icons/content_paste.svg">
+                <div class="grid-item-text">粘贴</div>
+            </div>
+            <div class="grid-item" onclick="selectImage();">
+                <img src="/static/icons/insert_photo.svg">
+                <div class="grid-item-text">插图</div>
+            </div>
+            <div class="grid-item" onclick="invertColor();">
+                <img src="/static/icons/invert_colors_off.svg" class="icon-invertColor">
+                <div class="grid-item-text">反色</div>
+            </div>
+            <div class="grid-item" onclick="toggleRefLine();">
+                <img src="/static/icons/grid_on.svg" class="icon-refLine">
+                <div class="grid-item-text">参考线</div>
+            </div>
+        </div>
+    </div>
+    <!-- 对话框 - 关于 -->
+    <div class="dialog dialog-about"
+        style="padding: 16px;left: 152px;width: 256px;transform-origin: left calc(100% + 32px);">
+        <img src="/static/InkMirror-LOGO-20250613-white.png"
+            style="width: 80%;filter: brightness(1.25);margin: 16px 10% 8px 10%;">
+        <div style="text-align: center;opacity: 0.75;margin-bottom: 8px;">Version 1.0.0</div>
+        <div style="margin-bottom: 4px;">
+            <img src="/static/icons/info.svg" style="opacity: 0.5;filter: invert(1);transform: translateY(6px);">
+            基于 Fabric.js 的书写与绘图工具，支持局域网内协作。
+        </div>
+        <div style="margin-bottom: 4px;font-size: 15px;">
+            <img src="/static/icons/lightbulb.svg" style="opacity: 0.5;filter: invert(1);transform: translateY(6px);">
+            手势操作：双指缩放，多指平移。<br>（仅在笔模式下可用。）
+        </div>
+        <div style="margin-bottom: 4px;">
+            <img src="/static/icons/lightbulb.svg" style="opacity: 0.5;filter: invert(1);transform: translateY(6px);">
+            拖放图片可插入到画布。
+        </div>
+        <div style="margin-bottom: 4px;">
+            <img src="/static/icons/person.svg" style="opacity: 0.5;filter: invert(1);transform: translateY(6px);">
+            Made by Burger Studio.
+        </div>
+        <div
+            style="margin-top: 16px;display: grid;grid-template-columns: calc(50% - 4px) calc(50% - 4px);grid-gap: 8px;">
+            <div class="btn btn-secondary" onclick="location.href='https://github.com/BGStudio2021/InkMirror';">
+                <img src="/static/icons/github.svg"
+                    style="filter: invert(1);transform: translateY(3px) scale(1.25);width: 16px;height: 16px;margin-right: 4px;">
+                GitHub
+            </div>
+            <div class="btn btn-secondary" onclick="toggleDialog('.dialog-about');">关闭</div>
+        </div>
+    </div>
+    <!-- 对话框 - 形状提示 -->
+    <div class="dialog dialog-shapeTip"
+        style="padding: 8px 12px;pointer-events: none !important;left: 50%;transform: translate(-50%, -8px);">
+        <img src="/static/icons/shape.svg" class="icon-shapeTip"
+            style="display: inline-block;vertical-align: middle;filter: invert(1);">
+        <span style="display: inline-block;vertical-align: middle;transform: translateY(-1px);">在画布上轻划以绘制形状</span>
+    </div>
+    <!-- 对话框 - 拖放提示 -->
+    <div class="dialog dialog-dropTip"
+        style="padding: 8px 12px;pointer-events: none !important;left: 50%;transform: translate(-50%, -8px);">
+        <img src="/static/icons/insert_photo.svg"
+            style="display: inline-block;vertical-align: middle;filter: invert(1);">
+        <span style="display: inline-block;vertical-align: middle;transform: translateY(-1px);">松开鼠标导入图片</span>
+    </div>
+    <!-- 对话框 - 网络状况 -->
+    <div class="dialog dialog-netStatus"
+        style="padding: 8px 12px;pointer-events: none !important;left: 50%;top: 16px;bottom: auto;transform: translateX(-50%);">
+        <img class="icon-netStatus-online" style="display: inline-block;vertical-align: middle;filter: invert(1);"
+            src="/static/icons/link.svg">
+        <img class="icon-netStatus-offline" style="display: inline-block;vertical-align: middle;filter: invert(1);"
+            src="/static/icons/link_off.svg">
+        <span class="text-netStatus"
+            style="display: inline-block;vertical-align: middle;transform: translateY(-1px);"></span>
+    </div>
+    <!-- 遮罩层 -->
+    <!-- 形状绘制遮罩层 -->
+    <div class="shape-overlay"></div>
+    <!-- 反色遮罩层 -->
+    <div class="invertColor-overlay"></div>
+    <!-- 参考线遮罩层 -->
+    <div class="refLine-overlay"></div>
+    <!-- 形状尺寸提示框 -->
+    <div class="shape-reference"></div>
+    <script src="/static/socket.io.js"></script>
+    <script src="/static/script.js"></script>
+</body>
+
+</html>

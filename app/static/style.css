@@ -1,0 +1,488 @@
+/* 页面整体 */
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    font-family: Arial, sans-serif;
+    background: #1e272c;
+    overflow: hidden;
+}
+
+/* 画布 */
+.lower-canvass {
+    background: #1e272c;
+}
+
+/* 工具栏部分 */
+/* 工具栏容器 */
+.toolbar-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    z-index: 10000;
+    bottom: 8px;
+    width: 100%;
+    pointer-events: none;
+}
+
+/* 工具栏 */
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 48px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(55, 71, 99, 0.85);
+    backdrop-filter: blur(8px);
+    user-select: none;
+    pointer-events: all;
+    animation: emerge 0.4s 0.2s forwards;
+    opacity: 0;
+    transform: translateY(calc(100% + 8px));
+}
+
+/* 反色模式下的工具栏 */
+.invert .toolbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* 工具栏动画 */
+@keyframes emerge {
+    from {
+        opacity: 0;
+        transform: translateY(calc(100% + 8px));
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 工具栏项 */
+.toolbar-item {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 48px;
+    height: 48px;
+    transition: 0.1s;
+}
+
+.toolbar-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.toolbar-item:active {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* 禁用的工具栏项（与禁用的网格项合并） */
+.toolbar-item-disabled,
+.grid-item-disabled {
+    opacity: 0.25;
+    pointer-events: none;
+}
+
+/* 工具栏图标 */
+.toolbar-item img {
+    filter: invert(1);
+    opacity: 0.9;
+    transition: 0.2s;
+}
+
+/* 工具栏图标装饰 */
+.toolbar-item::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    width: 0;
+    height: 4px;
+    border-radius: 4px;
+    background: rgb(174, 191, 219);
+    transition: 0.2s;
+}
+
+/* 活动的工具栏项 */
+.toolbar-item-active {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.toolbar-item-active:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.toolbar-item-active:active {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.toolbar-item-active:active::after {
+    transition: 0s;
+    width: 12px;
+}
+
+.toolbar-item-active::after {
+    width: 24px;
+}
+
+.toolbar-item-active img {
+    transform: translateY(-4px);
+}
+
+/* 对话框部分 */
+/* 对话框 */
+.dialog {
+    position: fixed;
+    z-index: 10001;
+    bottom: 64px;
+    left: 50%;
+    border-radius: 8px;
+    background: rgba(55, 71, 99, 0.85);
+    color: #fff;
+    backdrop-filter: blur(8px);
+    user-select: none;
+    transition-property: opacity, transform;
+    transition-duration: 0.2s;
+    opacity: 0;
+    transform: translateX(-50%) scale(0.75);
+    transform-origin: 50% calc(100% + 32px);
+    pointer-events: none;
+}
+
+/* 反色模式下的对话框 */
+.invert .dialog {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* 打开的对话框 */
+.dialog-open {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+    pointer-events: all;
+}
+
+/* 固定的对话框 */
+.dialog-fixed {
+    opacity: 1 !important;
+    transform: translateX(-50%) scale(1) !important;
+    pointer-events: all !important;
+}
+
+/* 对话框标题 */
+.dialog-title {
+    text-align: center;
+    font-size: 18px;
+}
+
+/* 对话框按钮（固定按钮） */
+.dialog-btn-icon {
+    position: absolute;
+    z-index: 101;
+    top: 12px;
+    right: 12px;
+    width: 26px;
+    height: 26px;
+    padding: 4px;
+    border-radius: 8px;
+    transition: 0.1s;
+}
+
+.dialog-btn-icon img {
+    filter: invert(1);
+    transform: translate(1px, 1px);
+}
+
+.dialog-btn-icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.dialog-btn-icon:active {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.dialog-disabled .dialog-btn-icon {
+    opacity: 0.5;
+}
+
+/* 对话框可拖拽区域 */
+.dialog-dragger {
+    position: absolute;
+    z-index: 100;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 50px;
+    border-radius: 8px 8px 0 0;
+}
+
+/* 对话框遮罩（用于禁用对话框） */
+.dialog-overlay {
+    position: absolute;
+    z-index: 99;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    pointer-events: none;
+}
+
+.dialog-disabled.dialog-fixed .dialog-overlay {
+    background: rgba(55, 71, 99, 0.5);
+    pointer-events: all;
+}
+
+/* 按钮部分 */
+/* 普通按钮 */
+.btn {
+    text-align: center;
+    font-size: 15px;
+    padding: 6px 16px;
+    border-radius: 8px;
+    background: rgba(174, 191, 219, 0.85);
+    color: #000;
+    transition: 0.1s;
+}
+
+.btn:hover {
+    background: rgba(146, 169, 206, 0.85);
+}
+
+.btn:active {
+    background: rgba(121, 149, 195, 0.85);
+}
+
+/* 次要按钮 */
+.btn-secondary {
+    background: rgba(174, 191, 219, 0.2);
+    color: #fff;
+}
+
+.btn-secondary:hover {
+    background: rgba(174, 191, 219, 0.3);
+}
+
+.btn-secondary:active {
+    background: rgba(174, 191, 219, 0.1);
+}
+
+/* 调色板部分 */
+/* 调色板 */
+.palette {
+    display: grid;
+    grid-template-columns: auto auto auto auto auto auto auto;
+    grid-gap: 8px;
+    margin: 8px 0;
+}
+
+/* 调色板项 */
+.palette-item {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    transition: 0.1s;
+}
+
+.palette-item:hover {
+    filter: invert(0.1);
+}
+
+.palette-item:active {
+    filter: invert(0.2);
+}
+
+/* 自定义颜色按钮 */
+.palette-item-customColor:hover {
+    filter: invert(0);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.palette-item-customColor:active {
+    filter: invert(0);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* 隐藏的自定义颜色输入框 */
+.input-customColor {
+    position: absolute;
+    left: 248px;
+    top: 0;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* 滑块部分 */
+/* 滑块 */
+.input-range {
+    /* 移除默认样式 */
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+}
+
+/* Webkit 浏览器滑块轨道 */
+.input-range::-webkit-slider-runnable-track {
+    height: 10px;
+    background: linear-gradient(to right, rgba(174, 191, 219, 0.25), rgb(174, 191, 219));
+    border-radius: 5px;
+}
+
+/* Webkit 浏览器滑块 */
+.input-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #fff;
+    margin-top: -2.5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 0 2px rgb(174, 191, 219);
+}
+
+/* Firefox 浏览器滑块轨道 */
+.input-range::-moz-range-track {
+    height: 10px;
+    background: linear-gradient(to right, rgba(174, 191, 219, 0.25), rgb(174, 191, 219));
+    border-radius: 5px;
+}
+
+/* Firefox 浏览器滑块 */
+.input-range::-moz-range-thumb {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #fff;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 0 2px rgb(174, 191, 219);
+}
+
+/* 网格部分 */
+/* 网格 */
+.grid {
+    display: grid;
+    grid-template-columns: auto auto auto auto;
+    grid-gap: 4px;
+}
+
+/* 网格项 */
+.grid-item {
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    transition: 0.1s;
+}
+
+.grid-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.grid-item:active {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.grid-item img {
+    margin: 6px;
+    filter: invert(1);
+}
+
+/* 带文本的网格项 */
+.grid-with-text .grid-item {
+    width: 48px;
+    height: auto;
+}
+
+.grid-with-text .grid-item img {
+    margin: 6px 12px 0 12px;
+}
+
+.grid-with-text .grid-item-text {
+    text-align: center;
+    font-size: 12px;
+    margin-bottom: 4px;
+    transform: translateY(-2px);
+}
+
+/* 遮罩层部分 */
+/* 形状绘制遮罩层 */
+.shape-overlay {
+    position: fixed;
+    z-index: 9997;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    pointer-events: none;
+}
+
+/* 反色遮罩层 */
+.invertColor-overlay {
+    position: fixed;
+    z-index: 9999;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* 启用的反色遮罩层 */
+.invert .invertColor-overlay {
+    backdrop-filter: invert(1);
+}
+
+/* 参考线遮罩层 */
+.refLine-overlay {
+    position: fixed;
+    z-index: 9998;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 1;
+    background-image: url('/static/icons/reference_dot.svg');
+    background-repeat: repeat;
+    pointer-events: none;
+}
+
+/* 其它部分 */
+/* 并排的图标 */
+.icon-inline {
+    display: inline-block;
+    vertical-align: middle;
+    filter: invert(1);
+}
+
+/* 分割线 */
+hr {
+    border-style: solid;
+    border-color: rgba(174, 191, 219, 0.5);
+}
+
+/* 画笔预览 */
+.penPreview {
+    vertical-align: middle;
+    float: right;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    transform: scale(0.8);
+    transition: 0.1s;
+}
+
+/* 形状尺寸提示框 */
+.shape-reference {
+    position: fixed;
+    z-index: 9997;
+    outline: 2px solid rgb(126, 153, 206);
+    opacity: 0;
+    transform-origin: left top;
+    pointer-events: none;
+}
