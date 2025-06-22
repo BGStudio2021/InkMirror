@@ -15,7 +15,7 @@
     <!-- 工具栏 -->
     <!-- 主工具栏 -->
     <div class="toolbar-container">
-        <div class="toolbar">
+        <div class="toolbar toolbar-main">
             <div class="toolbar-item penMode penMode-selector" onclick="setPenMode('selector');">
                 <img src="/static/icons/cursor.svg">
             </div>
@@ -44,7 +44,7 @@
     </div>
     <!-- 右侧工具栏（翻页器） -->
     <div class="toolbar-container" style="justify-content: right;">
-        <div class="toolbar" style="margin-right: 8px;">
+        <div class="toolbar toolbar-right" style="margin-right: 8px;">
             <div class="toolbar-item btn-prevPage" onclick="prevPage();">
                 <img src="/static/icons/keyboard_arrow_left.svg">
             </div>
@@ -56,7 +56,7 @@
     </div>
     <!-- 左侧工具栏 -->
     <div class="toolbar-container" style="justify-content: left;">
-        <div class="toolbar" style="margin-left: 8px;">
+        <div class="toolbar toolbar-left" style="margin-left: 8px;">
             <div class="toolbar-item" onclick="toggleDialog('.dialog-about');closeAllDialogs('.dialog-about');">
                 <img src="/static/icons/info.svg">
             </div>
@@ -294,7 +294,7 @@
         style="padding: 16px;left: 152px;width: 256px;transform-origin: left calc(100% + 32px);">
         <img src="/static/InkMirror-LOGO-20250613-white.png"
             style="width: 80%;filter: brightness(1.25);margin: 16px 10% 8px 10%;">
-        <div style="text-align: center;opacity: 0.75;margin-bottom: 8px;">Version 1.0.0</div>
+        <div style="text-align: center;opacity: 0.75;margin-bottom: 8px;">Version 1.1.0</div>
         <div style="margin-bottom: 4px;">
             <img src="/static/icons/info.svg" style="opacity: 0.5;filter: invert(1);transform: translateY(6px);">
             基于 Fabric.js 的书写与绘图工具，支持局域网内协作。
@@ -352,8 +352,13 @@
     <div class="invertColor-overlay"></div>
     <!-- 参考线遮罩层 -->
     <div class="refLine-overlay"></div>
+    <!-- 只读遮罩层 -->
+    <div class="readonly-overlay"></div>
+    <!-- 其它 -->
     <!-- 形状尺寸提示框 -->
     <div class="shape-reference"></div>
+    <!-- 只读模式提示 -->
+    <div class="readonly-hint">只读模式</div>
     <script src="/static/socket.io.js"></script>
     <script src="/static/script.js"></script>
 </body>

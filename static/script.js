@@ -16,6 +16,7 @@ function init() {
     init_others();
 }
 // 初始化画布
+var autoBOTF = true; // 选择时自动置顶对象
 function init_canvas() {
     // 准备画布
     canvas = new fabric.Canvas('canvas', {
@@ -52,9 +53,11 @@ function init_canvas() {
             handleCanvasChange();
         } else {
             // 置顶选中对象
-            e.selected.forEach(function (obj) {
-                canvas.bringObjectToFront(obj);
-            });
+            if (autoBOTF) {
+                e.selected.forEach(function (obj) {
+                    canvas.bringObjectToFront(obj);
+                });
+            }
             handleCanvasChange();
             // 允许调整样式
             document.querySelector('.btn-style').classList.remove('toolbar-item-disabled');
@@ -239,6 +242,29 @@ function init_gestures() {
     canvas.on('mouse:down', _gestureAct);
     canvas.on('mouse:move', _gestureAct_);
     canvas.on('mouse:up', gestureAct_);
+    // 处理只读模式下的手势
+    var readonlyOverlay = document.querySelector('.readonly-overlay');
+    ['mousedown', 'touchstart'].forEach(function (event) {
+        readonlyOverlay.addEventListener(event, function (e) {
+            var eventObj = document.createEvent('MouseEvents');
+            eventObj.e = e;
+            _gestureAct(eventObj);
+        });
+    });
+    ['mousemove', 'touchmove'].forEach(function (event) {
+        readonlyOverlay.addEventListener(event, function (e) {
+            var eventObj = document.createEvent('MouseEvents');
+            eventObj.e = e;
+            _gestureAct_(eventObj);
+        });
+    });
+    ['mouseup', 'touchend'].forEach(function (event) {
+        readonlyOverlay.addEventListener(event, function (e) {
+            var eventObj = document.createEvent('MouseEvents');
+            eventObj.e = e;
+            gestureAct_(eventObj);
+        });
+    });
     // 触摸按下
     function _gestureAct(e) {
         if (e.e.type !== 'touchstart' || e.e.touches.length < 2 || currentPenMode !== 'pen') return; // 仅在笔模式下操作
@@ -332,9 +358,11 @@ function init_paste() {
     });
 }
 // 初始化 socket.io 连接
+var socket;
+var readonly = false;
 function init_socket() {
     var lastTimestamp = -1;
-    var socket = io();
+    socket = io();
     var socket_inited = false;
     // 接收画布数据
     socket.on('canvasData', function (data) {
@@ -350,9 +378,21 @@ function init_socket() {
             console.log('socket:receive');
         } else {
             if (socket_inited) return; // 只初始化一次
+            readonly = data.readonly;
             pages = JSON.parse(data.data);
             reloadCurrentPage = true;
-            socket_inited = true;
+            // 显示工具栏
+            setTimeout(() => {
+                document.querySelector('.toolbar-left').classList.add('toolbar-visible');
+                document.querySelector('.toolbar-right').classList.add('toolbar-visible');
+                // 处理只读模式
+                if (readonly) {
+                    document.querySelector('.readonly-hint').classList.add('readonly-hint-visible');
+                    document.querySelector('.readonly-overlay').style.pointerEvents = 'all';
+                } else {
+                    document.querySelector('.toolbar-main').classList.add('toolbar-visible');
+                }
+            }, 200);
             console.log('socket:init');
         }
         // 刷新当前页面
@@ -379,7 +419,8 @@ function init_socket() {
             }, 10);
         }
         console.log(data);
-        updatePageInfo({ clearStack: false });
+        updatePageInfo({ clearStack: !socket_inited });
+        socket_inited = true;
     });
     // 监听网络更改
     var interval_hideNetStatus;
@@ -660,8 +701,8 @@ function prevPage() {
     currentPage--;
     canvas.loadFromJSON(pages[currentPage], function () {
         canvas.renderAll();
-        canvas.viewportTransform = vpt[currentPage] ? vpt[currentPage] : [1, 0, 0, 1, 0, 0];
     });
+    canvas.viewportTransform = vpt[currentPage] ? vpt[currentPage] : [1, 0, 0, 1, 0, 0];
     // 用一些奇怪的方法更新画布（）
     setTimeout(() => {
         resizeCanvas();
@@ -684,8 +725,8 @@ function nextPage() {
     currentPage++;
     canvas.loadFromJSON(pages[currentPage], function () {
         canvas.renderAll();
-        canvas.viewportTransform = vpt[currentPage] ? vpt[currentPage] : [1, 0, 0, 1, 0, 0];
     });
+    canvas.viewportTransform = vpt[currentPage] ? vpt[currentPage] : [1, 0, 0, 1, 0, 0];
     setTimeout(() => {
         resizeCanvas();
         recordingState = true;
@@ -873,10 +914,23 @@ function _drawShape_(e) {
                 x2: x,
                 y2: y
             });
+            // 辅助对齐
+            if (Math.abs(drawingShapeObj.x1 - drawingShapeObj.x2) < 10) {
+                drawingShapeObj.set({ x2: drawingShapeObj.x1 });
+            }
+            if (Math.abs(drawingShapeObj.y1 - drawingShapeObj.y2) < 10) {
+                drawingShapeObj.set({ y2: drawingShapeObj.y1 });
+            }
             break;
         case 'arrow':
             var d = Math.sqrt(Math.pow(x - drawingShapeObj.left, 2) + Math.pow(y - drawingShapeObj.top, 2));
             var angle = Math.atan2(y - drawingShapeObj.top, x - drawingShapeObj.left) * 180 / Math.PI - 90;
+            // 辅助对齐
+            [90, 0, -90, -180, -270].forEach(function (a) {
+                if (Math.abs(a - angle) < 5) {
+                    angle = a;
+                }
+            });
             var arrowSize = Math.log(canvas.freeDrawingBrush.width + 1) * 15;
             drawingShapeObj.getObjects()[0].set({ y1: -d / 2, y2: d / 2 - arrowSize });
             drawingShapeObj.getObjects()[1].set({ top: d / 2 });
@@ -1088,19 +1142,12 @@ function drawPolygon_() {
 // 发送画布数据
 var client_code = generateRandomCode(8); // 生成 8 位随机代码，作为客户端代号
 function postCanvasData() {
-    if (String(pages) === '{"version":"6.6.2","objects":[],"background":"#1e272c"}') return; // 忽略空白画布
-    let xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/postCanvasData');
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.send(JSON.stringify({ page: currentPage, data: JSON.stringify(canvas), client_code: client_code }));
+    socket.emit('postCanvasData', { page: currentPage, data: JSON.stringify(canvas), client_code: client_code });
     console.log('socket:post');
 }
 // 发送新页面
 function postNewPage() {
-    let xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/newPage');
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.send();
+    socket.emit('newPage');
     console.log('socket:post');
 }
 // 其它部分
@@ -1131,24 +1178,26 @@ function setStyle(options) {
 }
 // 图层操作
 function changeLayer(layer) {
+    autoBOTF = false; // 禁用自动置顶
+    var objects = getActiveObjects();
     switch (layer) {
         case 'up':
-            getActiveObjects().forEach(function (obj) {
+            objects.forEach(function (obj) {
                 canvas.bringObjectForward(obj);
             });
             break;
         case 'down':
-            getActiveObjects().forEach(function (obj) {
+            objects.forEach(function (obj) {
                 canvas.sendObjectBackwards(obj);
             });
             break;
         case 'top':
-            getActiveObjects().forEach(function (obj) {
+            objects.forEach(function (obj) {
                 canvas.bringObjectToFront(obj);
             });
             break;
         case 'bottom':
-            getActiveObjects().forEach(function (obj) {
+            objects.forEach(function (obj) {
                 canvas.sendObjectToBack(obj);
             });
             break;
@@ -1156,9 +1205,14 @@ function changeLayer(layer) {
             break;
     }
     canvas.discardActiveObject();
+    setTimeout(() => {
+        // 选中之前的对象
+        var activeSelection = new fabric.ActiveSelection(objects, { canvas: canvas });
+        canvas.setActiveObject(activeSelection);
+        autoBOTF = true; // 启用自动置顶
+    }, 0);
     canvas.requestRenderAll();
     handleCanvasChange(); // 由于 Fabric.js 更改图层后不会自动触发事件，此处需单独记录操作
-    closeAllDialogs();
 }
 // 复制对象
 var clipboard;
@@ -1411,16 +1465,27 @@ function updateBtnAvai() {
     }
     // 多页面操作
     var prevButton = document.querySelector('.btn-prevPage');
+    var nextButton = document.querySelector('.btn-nextPage');
     var nextIcon = document.querySelector('.icon-nextPage');
     if (currentPage <= 0) {
         prevButton.classList.add('toolbar-item-disabled');
     } else {
         prevButton.classList.remove('toolbar-item-disabled');
     }
-    if (currentPage >= pages.length - 1) {
-        nextIcon.src = "/static/icons/add.svg";
-    } else {
+    // 处理只读模式
+    if (readonly) {
         nextIcon.src = "/static/icons/keyboard_arrow_right.svg";
+        if (currentPage >= pages.length - 1) {
+            nextButton.classList.add('toolbar-item-disabled');
+        } else {
+            nextButton.classList.remove('toolbar-item-disabled');
+        }
+    } else {
+        if (currentPage >= pages.length - 1) {
+            nextIcon.src = "/static/icons/add.svg";
+        } else {
+            nextIcon.src = "/static/icons/keyboard_arrow_right.svg";
+        }
     }
 }
 // 获取选中对象

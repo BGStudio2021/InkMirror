@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['main.py'],
+    ['app-linux.py'],
     pathex=[],
     binaries=[],
     datas=[('config.ini', '.'), ('static', 'static'), ('data', '.')],

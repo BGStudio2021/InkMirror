@@ -18,6 +18,14 @@ socketio = SocketIO(app)
 config = configparser.ConfigParser()
 config.read("config.ini")
 server_port = config.getint("server", "port")
+readonly = config.getboolean("app", "readonly")
+
+# 获取本机局域网 IP
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.connect(("8.8.8.8", 80))
+server_ip = s.getsockname()[0]
+server_ip_with_port = server_ip + ":" + str(server_port)
+s.close()
 
 # 初始化画布数据
 canvas_data = ['{"version":"6.6.2","objects":[],"background":"#1e272c"}']
@@ -37,10 +45,12 @@ else:
 
 
 # 客户端发送画布数据
-@app.route("/api/postCanvasData", methods=["POST"])
-def postCanvasData():
+@socketio.on("postCanvasData")
+def postCanvasData(data):
     client_ip = request.remote_addr
-    data = json.loads(request.get_data())
+    # 只读模式仅允许本机编辑
+    if client_ip != server_ip and readonly:
+        return "Access denied."
     client_code = data.get("client_code")  # 获取客户端代号
     page = data.get("page")  # 获取页码
     _canvas_data = data.get("data")  # 获取画布数据
@@ -64,13 +74,15 @@ def postCanvasData():
         client_ip,
         "编辑第 " + str(page + 1) + " 页。",
     )
-    return "success"
+    return "Success."
 
 
 # 客户端新建页面
-@app.route("/api/newPage", methods=["POST"])
+@socketio.on("newPage")
 def newPage():
     client_ip = request.remote_addr
+    if client_ip != server_ip and readonly:
+        return "Access denied."
     # 新增页码并更新内存
     _data = '{"version":"6.6.2","objects":[],"background":"#1e272c"}'
     canvas_data.append(_data)
@@ -93,7 +105,7 @@ def newPage():
         client_ip,
         "创建第 " + str(len(canvas_data)) + " 页。",
     )
-    return "success"
+    return "Success."
 
 
 # 客户端请求画布数据
@@ -105,6 +117,7 @@ def getCanvasData():
         "canvasData",
         {
             "data": json.dumps(canvas_data),
+            "readonly": client_ip != server_ip and readonly,
             "client_code": "server",
             "timestamp": time.time(),
         },
@@ -144,17 +157,12 @@ def index():
 
 
 if __name__ == "__main__":
-    # 获取本机局域网 IP
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(("8.8.8.8", 80))
-    server_ip = s.getsockname()[0] + ":" + str(server_port)
-    s.close()
     # 输出时间、IP
     print(
         "[" + time.strftime("%Y-%m-%d %H:%M:%S") + "] InkMirror 服务已启动，访问",
-        "http://" + server_ip + "/",
+        "http://" + server_ip_with_port + "/",
         "开始使用。",
     )
     # 使用浏览器打开
-    webbrowser.open("http://" + server_ip + "/")
+    webbrowser.open("http://" + server_ip_with_port + "/")
     socketio.run(app, host="0.0.0.0", port=server_port, debug=False)
