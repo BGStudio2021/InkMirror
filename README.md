@@ -1,7 +1,7 @@
-<div style="text-align:center;">
+<p align="center">
 <img src="./InkMirror-Logo-Rect.png" alt="InkMirror" style="margin: 16px 0;width: 90%;max-width: 480px;" />
-</div>
-<div style="text-align:center;">一个基于 Fabric.js 的网页白板，支持局域网内协作。</div>
+</p>
+<p align="center">一个基于 Fabric.js 的网页白板，支持局域网内协作。</p>
 
 ## 功能一览
 - [x] 在同一网络下协作书写（可同时编辑不同页面）
