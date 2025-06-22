@@ -1,5 +1,5 @@
-<div style="padding: 24px 32px;background-color: rgba(55, 71, 99,0.75);border-radius: 8px;width: 50%;margin: 16px calc(25% - 32px);">
-<img src="./static/InkMirror-LOGO-20250613-white.png" alt="InkMirror" />
+<div style="text-align:center;">
+<img src="./InkMirror-Logo-Rect.png" alt="InkMirror" style="margin: 16px 0;width: 90%;max-width: 480px;" />
 </div>
 <div style="text-align:center;">一个基于 Fabric.js 的网页白板，支持局域网内协作。</div>
 

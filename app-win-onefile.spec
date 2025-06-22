@@ -15,7 +15,7 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 splash = Splash(
-    './InkMirror-Splash-20250605.png',
+    './InkMirror-Splash.png',
     binaries=a.binaries,
     datas=a.datas,
     text_pos=None,
