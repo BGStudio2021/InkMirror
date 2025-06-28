@@ -28,6 +28,9 @@ s.close()
 # 初始化画布数据
 canvas_data = ['{"version":"6.6.2","objects":[],"background":"#1e272c"}']
 
+# 初始化在线成员
+online_members = []
+
 # 如果有参数，则使用参数中指定的画布数据文件，否则创建空画布
 if len(sys.argv) > 1:
     data_file = sys.argv[1]
@@ -132,6 +135,14 @@ def getCanvasData():
 @socketio.on("connect")
 def handle_connect():
     client_ip = request.remote_addr
+    # 更新在线成员
+    if client_ip == server_ip:
+        online_members.append("host-" + client_ip)
+    else:
+        online_members.append(client_ip)
+    # 发送广播
+    socketio.emit("onlineMembers", online_members)
+    # 打印日志
     print("[" + time.strftime("%Y-%m-%d %H:%M:%S") + "] 客户端", client_ip, "已连接。")
 
 
@@ -139,6 +150,14 @@ def handle_connect():
 @socketio.on("disconnect")
 def handle_disconnect():
     client_ip = request.remote_addr
+    # 更新在线成员
+    if client_ip == server_ip:
+        online_members.remove("host-" + client_ip)
+    else:
+        online_members.remove(client_ip)
+    # 发送广播
+    socketio.emit("onlineMembers", online_members)
+    # 打印日志
     print(
         "[" + time.strftime("%Y-%m-%d %H:%M:%S") + "] 客户端", client_ip, "已断开连接。"
     )

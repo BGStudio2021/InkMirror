@@ -401,6 +401,30 @@ body {
     transform: translateY(-2px);
 }
 
+/* 列表部分 *
+/* 列表项 */
+.list-item {
+    padding: 4px;
+    border-radius: 4px;
+    transition: 0.1s;
+}
+
+.list-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.list-item:active {
+    background: rgba(255, 255, 255, 0.2);
+}
+/* 列表拖动条 */
+.list::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.list::-webkit-scrollbar-thumb {
+    background-color: rgba(174, 191, 219, 0.5);
+    border-radius: 4px;
+}
 /* 遮罩层部分 */
 /* 形状绘制遮罩层 */
 .shape-overlay {

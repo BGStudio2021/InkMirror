@@ -200,7 +200,7 @@ function init_dialogs() {
         });
     });
     // 拖拽对话框
-    var dialog_draggable = ['.dialog-penOptions', '.dialog-shape', '.dialog-style', '.dialog-more'];
+    var dialog_draggable = ['.dialog-penOptions', '.dialog-shape', '.dialog-style', '.dialog-more', '.dialog-onlineMembers'];
     dialog_draggable.forEach(function (selector) {
         var dialog = document.querySelector(selector);
         var dialog_dragger = dialog.querySelector(selector + ' .dialog-dragger');
@@ -375,7 +375,7 @@ function init_socket() {
             if (data.page === currentPage) {
                 reloadCurrentPage = true;
             }
-            console.log('socket:receive');
+            console.log('socket:receive canvasData');
         } else {
             if (socket_inited) return; // 只初始化一次
             readonly = data.readonly;
@@ -447,6 +447,12 @@ function init_socket() {
             document.querySelector('.dialog-netStatus').classList.remove('dialog-fixed');
         }, 3000);
         console.log('socket:disconnect');
+    });
+    // 监听成员变化
+    socket.on('onlineMembers', function (data) {
+        upgateOnlineMembers(data);
+        console.log('socket:receive onlineMembers');
+        console.log(data);
     });
 }
 // 初始化其他功能
@@ -1504,4 +1510,26 @@ function generateRandomCode(n) {
         code += chars[Math.floor(Math.random() * 36)];
     }
     return code;
+}
+// 更新在线成员
+function upgateOnlineMembers(data) {
+    var title = document.querySelector('.dialog-title-onlineMembers');
+    var list = document.querySelector('.list-onlineMembers');
+    title.textContent = '在线成员 (' + data.length + ')'; // 更新标题中的成员数量
+    // 更新在线成员列表
+    html = '';
+    data.forEach(function (member) {
+        // 发起人使用星标
+        if (member.indexOf('host-') !== -1) {
+            var icon = 'star';
+        } else {
+            var icon = 'person';
+        }
+        var ip = member.replace('host-', '');
+        html += `<div class="list-item">
+                <img src="/static/icons/${icon}.svg" class="icon-inline">
+                <div style="display: inline-block;vertical-align: middle;margin-left: 4px;font-size: 14px;">${ip}</div>
+            </div>`;
+    });
+    list.innerHTML = html;
 }

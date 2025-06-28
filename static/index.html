@@ -287,14 +287,28 @@
                 <img src="/static/icons/grid_on.svg" class="icon-refLine">
                 <div class="grid-item-text">参考线</div>
             </div>
+            <div class="grid-item" onclick="toggleDialog('.dialog-more');toggleDialog('.dialog-onlineMembers', {autoPos: true});">
+                <img src="/static/icons/group.svg" class="icon-refLine">
+                <div class="grid-item-text">成员</div>
+            </div>
         </div>
+    </div>
+    <!-- 对话框 - 在线成员 -->
+    <div class="dialog dialog-onlineMembers" style="padding: 16px;width: 192px;">
+        <div class="dialog-title dialog-title-onlineMembers">在线成员</div>
+        <div class="dialog-btn-icon" onclick="fixDialog('.dialog-onlineMembers');">
+            <img src="/static/icons/arrow_outward.svg">
+        </div>
+        <div class="dialog-dragger"></div>
+        <hr>
+        <div class="list list-onlineMembers" style="max-height: calc(80vh - 72px);overflow-y: auto;"></div>
     </div>
     <!-- 对话框 - 关于 -->
     <div class="dialog dialog-about"
         style="padding: 16px;left: 152px;width: 256px;transform-origin: left calc(100% + 32px);">
         <img src="/static/InkMirror-Logo-Text.png"
             style="width: 80%;filter: brightness(1.25);margin: 16px 10% 8px 10%;">
-        <div style="text-align: center;opacity: 0.75;margin-bottom: 8px;">Version 1.1.0</div>
+        <div style="text-align: center;opacity: 0.75;margin-bottom: 8px;">Version 1.1.1</div>
         <div style="margin-bottom: 4px;">
             <img src="/static/icons/info.svg" style="opacity: 0.5;filter: invert(1);transform: translateY(6px);">
             基于 Fabric.js 的书写与绘图工具，支持局域网内协作。
